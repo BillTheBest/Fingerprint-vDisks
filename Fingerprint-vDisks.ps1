@@ -2,7 +2,7 @@
 ##
 ## Script: Manually fingerprint vdisks
 ## Author: Steven Poitras
-## Description: Manually fingerprint vdisks matching a 
+## Description: Manually fingerprint vdisks matching a
 ##	specific search term
 ## Language: PowerCLI
 ##
@@ -27,22 +27,24 @@ $keyFile = 'path to your openssh_key'
 Connect-NutanixCluster -Server $server -UserName $user -Password ([Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($password))) -AcceptInvalidSSLCerts
 
 # Get vdisks matching a particular VM search string
-$vdisks = Get-VDisk | where {$_.nfsFileName -match $searchString}
+$vdisks = Get-VDisk | where {
+$_.nfsFileName -match $searchString}
 
 # Perform string formatting
-$vdiskIDs = $vdisks | select name | %{ $_ -replace ".*:" -replace "}.*"}
+$vdiskIDs = $vdisks | select name | %{
+$_ -replace ".*:" -replace "}.*"}
 
 # Find containers where vdisks reside
 $containerIDs = $vdisks.containerId | select -uniq
 
 # For each container make sure fingerprinting is enabled
 $containerIDs | %{
-	# If fingerprinting is disabled for the container turn it on
-	if ($(Get-Container -Id $_).fingerPrintOnWrite -eq 'off') {
-		Set-Container -Id $_ -FingerprintOnWrite 'ON'
-	} else {
-		# Fingerprinting already enabled
-	}
+    # If fingerprinting is disabled for the container turn it on
+    if ($(Get-Container -Id $_).fingerPrintOnWrite -eq 'off') {
+        Set-Container -Id $_ -FingerprintOnWrite 'ON'
+    } else {
+        # Fingerprinting already enabled
+    }
 }
 
 # Connect to Nutanix cluster via SSH
@@ -50,6 +52,6 @@ New-SshSession -ComputerName $server -Username $sshUser -KeyFile $keyFile
 
 # For each vdisk ID add fingerprints
 $vdiskIDs | %{
-	Invoke-SshCommand -InvokeOnAll -Command "source /etc/profile > /dev/null 2>&1; `
-	vdisk_manipulator -vdisk_id=$_ --operation=add_fingerprints -end_offset_mb=$end_offset_mb"
+    Invoke-SshCommand -InvokeOnAll -Command "source /etc/profile > /dev/null 2>&1; `
+    vdisk_manipulator -vdisk_id=$_ --operation=add_fingerprints -end_offset_mb=$end_offset_mb"
 }
